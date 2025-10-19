@@ -64,7 +64,7 @@ The project generates the following visualization files in the `images` director
   - Detailed risk assessment
   - Short-term and extended horizon predictions
 
-- `report.tex`: LaTeX document containing:
+- `report.pdf`: PDF document containing:
   - Complete methodology description
   - Embedded source code (C++ and Python)
   - All generated visualizations
