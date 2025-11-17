@@ -1,0 +1,247 @@
+\documentclass{beamer}
+\usetheme{Madrid}
+\usecolortheme{beaver}
+
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tikz}
+
+\title{Bayesian Estimation of Daily Return and Volatility of XRP/USDT using MCMC}
+\subtitle{Project-1 | MA4740: Bayesian Statistics}
+\author{Under the guidance of Prof. Arunabha Majumdar}
+\date{\today}
+
+\begin{document}
+
+% Title Slide
+\begin{frame}
+\titlepage
+\end{frame}
+
+% Slide 1: Motivation and Problem Statement
+\begin{frame}{Motivation and Problem Statement}
+\textbf{Challenge:} Cryptocurrency markets exhibit high volatility and uncertainty
+\vspace{0.5cm}
+
+\textbf{Limitations of Traditional Approaches:}
+\begin{itemize}
+    \item Point estimates fail to capture uncertainty
+    \item Frequentist confidence intervals lack intuitive interpretation
+    \item No principled way to incorporate prior knowledge
+\end{itemize}
+\vspace{0.5cm}
+
+\textbf{Our Solution:} Bayesian inference with Rejection Sampling
+\begin{itemize}
+    \item Complete probability distributions for parameters
+    \item Credible intervals with direct probabilistic interpretation
+    \item Posterior predictive distributions for forecasting
+\end{itemize}
+\end{frame}
+
+% Slide 2: Methodology - Bayesian Model
+\begin{frame}{Bayesian Model Specification}
+\textbf{Likelihood:} Log returns follow a Normal distribution
+\begin{equation*}
+r_t = \log\left(\frac{P_t}{P_{t-1}}\right) \sim \mathcal{N}(\mu, \sigma^2)
+\end{equation*}
+
+\textbf{Prior Distributions:} Non-informative conjugate priors
+\begin{align*}
+\mu &\sim \mathcal{N}(\mu_0 = 0, \sigma_0^2 = 1000) \\
+\sigma^2 &\sim \text{Inv-Gamma}(\alpha_0 = 0.001, \beta_0 = 0.001)
+\end{align*}
+
+\textbf{Posterior:} Normal-Inverse-Gamma (conjugate)
+\begin{equation*}
+p(\mu, \sigma^2 | \mathbf{r}) \propto p(\mathbf{r} | \mu, \sigma^2) \cdot p(\mu) \cdot p(\sigma^2)
+\end{equation*}
+\end{frame}
+
+% Slide 3: MCMC - Rejection Sampling
+\begin{frame}{MCMC Implementation: Rejection Sampling}
+\textbf{Algorithm:}
+\begin{enumerate}
+    \item Define proposal distributions centered on data:
+    \begin{align*}
+    q(\mu) &= \mathcal{N}\left(\bar{r}, \sqrt{\sigma_0^2 + \frac{s^2}{n}}\right) \\
+    q(\sigma^2) &= \text{Inv-Gamma}\left(\frac{n}{2}, \frac{1}{2}\sum_{i=1}^{n}(r_i - \bar{r})^2\right)
+    \end{align*}
+    
+    \item Draw candidate $(\mu^*, \sigma^{2*})$ from proposal
+    
+    \item Accept with probability: $\alpha = \min\left(1, \frac{p^*(\mu^*, \sigma^{2*} | \mathbf{r})}{M \cdot q(\mu^*, \sigma^{2*})}\right)$
+\end{enumerate}
+
+\textbf{Implementation Details:}
+\begin{itemize}
+    \item Target samples: 2,000 | Max attempts: 1,000,000
+    \item Envelope constant: $M = 10$
+    \item Typical acceptance rate: 1-20\%
+\end{itemize}
+\end{frame}
+
+% Slide 4: Results - Posterior Distributions
+\begin{frame}{Results: Posterior Distributions}
+\begin{columns}
+\column{0.5\textwidth}
+\textbf{Key Findings:}
+\begin{itemize}
+    \item \textbf{Mean Return ($\mu$):} \\
+    $-0.0012$ ($-0.12\%$ daily) \\
+    95\% CI: $[-0.088, 0.090]$
+    
+    \vspace{0.3cm}
+    \item \textbf{Volatility ($\sigma$):} \\
+    $0.0545$ ($5.45\%$ daily) \\
+    95\% CI: $[0.053, 0.056]$
+    
+    \vspace{0.3cm}
+    \item \textbf{Prob(Positive Return):} \\
+    49\% (nearly neutral)
+\end{itemize}
+
+\column{0.5\textwidth}
+\begin{figure}
+    \includegraphics[width=\textwidth]{images/mcmc_posteriors.png}
+    \caption{Posterior distributions from 2,000 MCMC samples}
+\end{figure}
+\end{columns}
+\end{frame}
+
+% Slide 5: Results - Predictive Distributions
+\begin{frame}{Posterior Predictive Distribution}
+\begin{columns}
+\column{0.55\textwidth}
+\begin{figure}
+    \includegraphics[width=\textwidth]{images/posterior_predictive.png}
+    \caption{Next-day return prediction}
+\end{figure}
+
+\column{0.45\textwidth}
+\textbf{Interpretation:}
+\begin{itemize}
+    \item 95\% Predictive Interval: \\
+    $[-14.3\%, +15.0\%]$
+    
+    \vspace{0.3cm}
+    \item Wide interval reflects:
+    \begin{itemize}
+        \item Parameter uncertainty
+        \item Market randomness
+        \item Crypto volatility
+    \end{itemize}
+    
+    \vspace{0.3cm}
+    \item Honest quantification of uncertainty
+\end{itemize}
+\end{columns}
+\end{frame}
+
+% Slide 6: Price Forecasts
+\begin{frame}{Multi-Horizon Price Forecasts}
+\begin{columns}
+\column{0.5\textwidth}
+\begin{figure}
+    \includegraphics[width=\textwidth]{images/price_forecast.png}
+    \caption{Widening uncertainty over time}
+\end{figure}
+
+\column{0.5\textwidth}
+\textbf{Current Price:} \$2.85
+
+\vspace{0.3cm}
+\begin{table}
+\tiny
+\begin{tabular}{lcc}
+\toprule
+\textbf{Horizon} & \textbf{Expected} & \textbf{95\% CI} \\
+\midrule
+Next Day & \$2.84 & [\$2.46, \$3.31] \\
+Next Week & \$2.83 & [\$2.03, \$3.96] \\
+Next Month & \$2.77 & [\$1.36, \$5.61] \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\vspace{0.3cm}
+\textbf{Key Insight:} \\
+Uncertainty compounds over time, illustrating the difficulty of long-term prediction in volatile markets
+\end{columns}
+\end{frame}
+
+% Slide 7: Trading Implications and Risk Assessment
+\begin{frame}{Trading Implications and Risk Assessment}
+\textbf{Risk Classification:} MEDIUM (volatility = 5.45\%)
+
+\vspace{0.3cm}
+\textbf{Trading Signal:} NEUTRAL (Low Confidence)
+\begin{itemize}
+    \item Nearly 50-50 probability of positive return
+    \item Wide credible interval containing zero
+    \item Suggests market-neutral or wait-and-see approach
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{Position Sizing Recommendation:}
+\begin{itemize}
+    \item Suggested allocation: 22.5\% (split long/short or reduced exposure)
+    \item Based on volatility-adjusted Kelly criterion
+    \item Incorporates directional uncertainty
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{Risk Management:}
+\begin{itemize}
+    \item Stop-loss: $\pm$ 8\% (1.5 $\times$ daily volatility)
+    \item Take-profit: $\pm$ 11\% (2 $\times$ daily volatility)
+\end{itemize}
+\end{frame}
+
+% Slide 8: Conclusions and Future Work
+\begin{frame}{Conclusions and Future Work}
+\textbf{Key Achievements:}
+\begin{itemize}
+    \item Successfully implemented Bayesian inference with Rejection Sampling
+    \item Generated 2,000 independent posterior samples (1-20\% acceptance rate)
+    \item Complete uncertainty quantification for crypto returns
+    \item Automated analysis pipeline with comprehensive reporting
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{Advantages of Bayesian Approach:}
+\begin{itemize}
+    \item Intuitive probability statements about parameters
+    \item Natural incorporation of uncertainty in predictions
+    \item Flexible framework for model extensions
+\end{itemize}
+
+\vspace{0.3cm}
+\textbf{Future Extensions:}
+\begin{itemize}
+    \item Time-varying volatility models (GARCH, Stochastic Volatility)
+    \item Alternative MCMC methods (Metropolis-Hastings, HMC)
+    \item Multi-asset portfolio optimization
+    \item Incorporation of external covariates and regime-switching
+\end{itemize}
+\end{frame}
+
+% Thank You Slide
+\begin{frame}
+\centering
+\Huge Thank You!
+
+\vspace{1cm}
+\Large Questions?
+
+\vspace{1.5cm}
+\normalsize
+\textbf{Project Repository:} github.com/username/bayesian-crypto-analysis \\
+\textbf{Course:} MA4740 - Bayesian Statistics \\
+\textbf{Instructor:} Prof. Arunabha Majumdar
+\end{frame}
+
+\end{document}
